@@ -10,14 +10,19 @@ namespace UsbDeviceInformationCollectorCore.CLibs.SetupApiDll
     {
         private const string DevEnum = "USB";
 
-        private readonly IntPtr _deviceInfo;
-        private readonly IntPtr _intPtrBuffer;
+        private IntPtr _deviceInfo;
+        private IntPtr _intPtrBuffer;
         private SpDevinfoData _devInfoData;
         private uint _regType;
         private uint _requiredSize;
         private bool _success = true;
 
         internal SetupApi()
+        {
+            SetGeneralData();
+        }
+
+        internal void SetGeneralData()
         {
             _intPtrBuffer = Marshal.AllocHGlobal(BufferSize);
             _deviceInfo = SetupDiGetClassDevs(IntPtr.Zero, DevEnum, IntPtr.Zero, (int)(Digcf.Present | Digcf.AllClasses));

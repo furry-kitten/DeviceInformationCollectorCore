@@ -5,6 +5,9 @@ namespace UsbDeviceInformationCollectorCore.CLibs
 {
     internal class LibrariesWorker
     {
+        internal AdvApi AdvApi { get; } = new();
+        internal SetupApi SetupApi { get; private set; } = new();
+
         internal string GetComPort()
         {
             var deviceRegistryKey = SetupApi.GetRegistryKeyForGlobalChanges();
@@ -18,8 +21,6 @@ namespace UsbDeviceInformationCollectorCore.CLibs
             return port;
         }
 
-        internal SetupApi SetupApi { get; } = new();
-
-        internal AdvApi AdvApi { get; } = new();
+        internal void ResetSetupApi() => SetupApi = new SetupApi();
     }
 }

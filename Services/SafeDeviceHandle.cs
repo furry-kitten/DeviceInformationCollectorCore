@@ -1,8 +1,8 @@
-﻿using Microsoft.Win32.SafeHandles;
-using System;
+﻿using System;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using UsbDeviceInformationCollectorCore.CLibs.User32;
+using Microsoft.Win32.SafeHandles;
+using UsbDeviceInformationCollectorCore.CLibs.User32Dll;
 
 namespace UsbDeviceInformationCollectorCore.Services
 {
@@ -10,7 +10,15 @@ namespace UsbDeviceInformationCollectorCore.Services
     {
         public SafeDeviceHandle() : base(true) { }
 
-        public SafeDeviceHandle(IntPtr pHandle) : base(true) => SetHandle(pHandle);
+        public SafeDeviceHandle(IntPtr pHandle) : base(true)
+        {
+            SetHandle(pHandle);
+        }
+
+        public static implicit operator HandleRef(SafeDeviceHandle generalSafeHandle) =>
+            new(generalSafeHandle, generalSafeHandle.handle);
+
+        public static implicit operator IntPtr(SafeDeviceHandle generalSafeHandle) => generalSafeHandle.handle;
 
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected override bool ReleaseHandle()
@@ -20,23 +28,9 @@ namespace UsbDeviceInformationCollectorCore.Services
                 return false;
             }
 
-            var bSuccess = User32.UnregisterDeviceNotification(handle);
+            var bSuccess = User32Dll.UnregisterDeviceNotification(handle);
             handle = IntPtr.Zero;
             return bSuccess;
         }
-
-        public static implicit operator IntPtr(SafeDeviceHandle generalSafeHandle) => generalSafeHandle.handle;
-
-        //public static explicit operator IntPtr(GeneralSafeHandle generalSafeHandle)
-        //{
-        //    return generalSafeHandle.handle;
-        //}
-
-        //public static explicit operator HandleRef(GeneralSafeHandle generalSafeHandle)
-        //{
-        //    return new HandleRef(generalSafeHandle, generalSafeHandle.handle);
-        //}
-
-        public static implicit operator HandleRef(SafeDeviceHandle generalSafeHandle) => new HandleRef(generalSafeHandle, generalSafeHandle.handle);
     }
 }

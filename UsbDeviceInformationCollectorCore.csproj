@@ -1,11 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
+    <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>UsbDeviceInformationCollectorCore</RootNamespace>
     <AssemblyName>UsbDeviceInformationCollectorCore</AssemblyName>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="CLibs\User32Dll\**" />
+    <Compile Remove="CLibs\User32\**" />
+    <EmbeddedResource Remove="CLibs\User32Dll\**" />
+    <EmbeddedResource Remove="CLibs\User32\**" />
+    <None Remove="CLibs\User32Dll\**" />
+    <None Remove="CLibs\User32\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="CLibs\User32Dll\User32Dll.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

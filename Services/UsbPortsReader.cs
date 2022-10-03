@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using NLog;
 using UsbDeviceInformationCollectorCore.CLibs;
 using UsbDeviceInformationCollectorCore.Enums;
 using UsbDeviceInformationCollectorCore.Models;
@@ -12,19 +12,21 @@ namespace UsbDeviceInformationCollectorCore.Services
     {
         private const string HubPattern = @"hub$";
         private const string RootUsbPathPattern = @"^PCIROOT\(\d+\)#PCI\(\d+\)#USBROOT\(\d+\)$";
-        private LibrariesWorker _worker = new ();
-        private readonly DeviceService _deviceService = DeviceService.Instance;
 
-        internal static UsbPortsReader Instance { get; } = new ();
+        private readonly LibrariesWorker _worker = new();
+        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
+        internal static UsbPortsReader Instance { get; } = new();
 
         internal List<DeviceProperties> GetPropertiesForAllDevices()
         {
+            _worker.ResetSetupApi();
+            var allProperties = new List<DeviceProperties>();
             if (!_worker.SetupApi.IsDeviceInfoValidValue)
             {
-                return new List<DeviceProperties>();
+                return allProperties;
             }
 
-            List<DeviceProperties> allProperties = new ();
             var isSuccess = true;
             for (uint i = 0; isSuccess; i++)
             {
@@ -48,87 +50,16 @@ namespace UsbDeviceInformationCollectorCore.Services
             return allProperties;
         }
 
-        internal List<DeviceProperties> GetDeviceProperties(Predicate<DeviceProperties> customFilter = null, bool getComPort = false)
-        {
-            _worker = new LibrariesWorker();
-            if (_worker.SetupApi.IsDeviceInfoValidValue == false)
-            {
-                return new List<DeviceProperties>();
-            }
-
-            List<DeviceProperties> allProperties = new ();
-            var isSuccess = true;
-            for (uint i = 0; isSuccess; i++)
-            {
-                var canFindDevice = _worker.SetupApi.CanFindDevice(i);
-                isSuccess = _worker.SetupApi.IsSuccess;
-                if (canFindDevice == false)
-                {
-                    break;
-                }
-
-                var deviceProperties = GetDeviceProperties(getComPort);
-                if (customFilter?.Invoke(deviceProperties) != true)
-                {
-                    continue;
-                }
-
-                if (deviceProperties == null)
-                {
-                    continue;
-                }
-
-                allProperties.Add(deviceProperties);
-            }
-
-            return allProperties;
-        }
-
-        internal List<DeviceProperties> ReadDeviceProperties(string[] expectedDeviceIds, bool getComPort = false)
-        {
-            if (_worker.SetupApi.IsDeviceInfoValidValue == false || expectedDeviceIds.Any() || expectedDeviceIds.Any(id => DeviceCache.Instance.UsbHubs.Any(hub => hub.HardwareId.Contains(id))))
-            {
-                return null;
-            }
-
-            List<DeviceProperties> allProperties = new ();
-            var isSuccess = true;
-            for (uint i = 0; isSuccess; i++)
-            {
-                var canFindDevice = _worker.SetupApi.CanFindDevice(i);
-                isSuccess = _worker.SetupApi.IsSuccess;
-                if (canFindDevice == false)
-                {
-                    break;
-                }
-
-                var deviceHardwareId = _worker.SetupApi.GetDeviceHardwareId();
-                if (expectedDeviceIds.Any(id => deviceHardwareId.ToLowerInvariant().Contains(id.ToLowerInvariant())) == false)
-                {
-                    continue;
-                }
-
-                var deviceProperties = GetDeviceProperties(deviceHardwareId, getComPort);
-                if (deviceProperties == null)
-                {
-                    return null;
-                }
-
-                allProperties.Add(deviceProperties);
-            }
-
-            return allProperties;
-        }
-
         internal List<DeviceProperties> ReadDeviceProperties(string expectedDeviceId, bool getComPort = false)
         {
-            if (_worker.SetupApi.IsDeviceInfoValidValue == false || string.IsNullOrEmpty(expectedDeviceId) || DeviceCache.Instance.UsbHubs.Any(hub => hub.HardwareId.Contains(expectedDeviceId)))
+            if (_worker.SetupApi.IsDeviceInfoValidValue == false || string.IsNullOrEmpty(expectedDeviceId))
             {
                 return null;
             }
 
-            List<DeviceProperties> allProperties = new ();
+            List<DeviceProperties> allProperties = new();
             var isSuccess = true;
+            _worker.ResetSetupApi();
             for (uint i = 0; isSuccess; i++)
             {
                 var canFindDevice = _worker.SetupApi.CanFindDevice(i);
@@ -139,7 +70,9 @@ namespace UsbDeviceInformationCollectorCore.Services
                 }
 
                 var deviceHardwareId = _worker.SetupApi.GetDeviceHardwareId();
-                if (deviceHardwareId.ToLowerInvariant().Contains(expectedDeviceId.ToLowerInvariant()) == false)
+                if (deviceHardwareId.ToLowerInvariant()
+                        .Contains(expectedDeviceId.ToLowerInvariant()) ==
+                    false)
                 {
                     continue;
                 }
@@ -151,6 +84,11 @@ namespace UsbDeviceInformationCollectorCore.Services
                 }
 
                 allProperties.Add(deviceProperties);
+            }
+
+            if (allProperties.Any() == false)
+            {
+                _logger.Error($"There is now one device with id \"{expectedDeviceId}\"");
             }
 
             return allProperties;
@@ -158,12 +96,13 @@ namespace UsbDeviceInformationCollectorCore.Services
 
         internal List<UsbHubProperties> ReadAllHubs()
         {
+            _worker.ResetSetupApi();
             if (!_worker.SetupApi.IsDeviceInfoValidValue)
             {
                 return new List<UsbHubProperties>();
             }
 
-            List<UsbHubProperties> allProperties = new ();
+            List<UsbHubProperties> allProperties = new();
             var isSuccess = true;
             for (uint i = 0; isSuccess; i++)
             {
@@ -184,41 +123,11 @@ namespace UsbDeviceInformationCollectorCore.Services
             return allProperties;
         }
 
-        internal List<UsbHubProperties> GetHubs(Predicate<DeviceProperties> customFilter = null)
-        {
-            if (!_worker.SetupApi.IsDeviceInfoValidValue)
-            {
-                return new List<UsbHubProperties>();
-            }
-
-            List<UsbHubProperties> allProperties = new ();
-            var isSuccess = true;
-            for (uint i = 0; isSuccess; i++)
-            {
-                var canFindDevice = _worker.SetupApi.CanFindDevice(i);
-                isSuccess = _worker.SetupApi.IsSuccess;
-                if (canFindDevice == false)
-                {
-                    break;
-                }
-
-                var deviceProperties = GetUsbHubProperties();
-                if (customFilter?.Invoke(deviceProperties) != true)
-                {
-                    continue;
-                }
-
-                allProperties.Add(deviceProperties);
-            }
-
-            return allProperties;
-        }
-
         private bool IsHub(UsbHubProperties properties) =>
-            !string.IsNullOrEmpty(properties?.Path) &&
-            Regex.IsMatch(properties.Path, RootUsbPathPattern, RegexOptions.IgnoreCase) ||
-            !string.IsNullOrEmpty(properties?.BusReportedDeviceDesc) &&
-            Regex.IsMatch(properties.BusReportedDeviceDesc, HubPattern, RegexOptions.IgnoreCase);
+            (!string.IsNullOrEmpty(properties?.Path) &&
+             Regex.IsMatch(properties.Path, RootUsbPathPattern, RegexOptions.IgnoreCase)) ||
+            (!string.IsNullOrEmpty(properties?.BusReportedDeviceDesc) &&
+             Regex.IsMatch(properties.BusReportedDeviceDesc, HubPattern, RegexOptions.IgnoreCase));
 
         private DeviceProperties GetDeviceProperties(string deviceHardwareId, bool getComPort = false)
         {
@@ -240,36 +149,12 @@ namespace UsbDeviceInformationCollectorCore.Services
                 deviceProperties.ComPort = _worker.GetComPort();
             }
 
-            deviceProperties.ShortPath = _deviceService.ChangeDevicePath(deviceProperties.Path);
-            return deviceProperties;
-        }
-
-        private DeviceProperties GetDeviceProperties(bool getComPort = false)
-        {
-            var deviceProperties = GetUsbHubProperties();
-            if (IsHub(deviceProperties))
-            {
-                return null;
-            }
-
-            deviceProperties.FriendlyName = _worker.SetupApi.GetDeviceFriendlyName();
-            deviceProperties.Type = _worker.SetupApi.GetDeviceType();
-            deviceProperties.Manufacturer = _worker.SetupApi.GetDeviceManufacturer();
-            deviceProperties.Location = _worker.SetupApi.GetDeviceLocationInformation();
-            deviceProperties.Description = _worker.SetupApi.GetDeviceDescription();
-            deviceProperties.Address = _worker.SetupApi.GetDeviceAddress();
-            if (getComPort)
-            {
-                deviceProperties.ComPort = _worker.GetComPort();
-            }
-
-            deviceProperties.ShortPath = _deviceService.ChangeDevicePath(deviceProperties.Path);
             return deviceProperties;
         }
 
         private DeviceProperties GetUsbHubProperties()
         {
-            DeviceProperties deviceProperties = new ()
+            DeviceProperties deviceProperties = new()
             {
                 Path = _worker.SetupApi.GetDeviceLocalPaths(),
                 PhysicalObjectName = _worker.SetupApi.GetDevicePhysicalDeviceObjectName(),
@@ -278,6 +163,7 @@ namespace UsbDeviceInformationCollectorCore.Services
                 BusReportedDeviceDesc = _worker.SetupApi.GetBusReportedDeviceDescription(),
                 HardwareId = _worker.SetupApi.GetDeviceHardwareId()
             };
+
             deviceProperties.PnpClassesTypes = deviceProperties.Class switch
             {
                 nameof(PnPDeviceClassType.AndroidUsbDeviceClass) => PnPDeviceClassType.AndroidUsbDeviceClass,
@@ -290,6 +176,7 @@ namespace UsbDeviceInformationCollectorCore.Services
                 nameof(PnPDeviceClassType.MEDIA) => PnPDeviceClassType.MEDIA,
                 _ => PnPDeviceClassType.None
             };
+
             deviceProperties.HardwareId = deviceProperties.Id;
             return deviceProperties;
         }

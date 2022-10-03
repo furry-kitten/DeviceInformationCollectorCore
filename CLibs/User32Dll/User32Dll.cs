@@ -1,47 +1,30 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Windows;
 using UsbDeviceInformationCollectorCore.CLibs.Enums;
 using UsbDeviceInformationCollectorCore.Models;
 using UsbDeviceInformationCollectorCore.Services;
 
-namespace UsbDeviceInformationCollectorCore.CLibs.User32
+namespace UsbDeviceInformationCollectorCore.CLibs.User32Dll
 {
-    internal class User32
+    internal class User32Dll
     {
-        //private static readonly ILog Logger = LogManager.GetLogger(nameof(User32));
-        private readonly bool _isWindowConfigured;
-        private readonly WindowKeeper _windowKeeper;
         private SafeDeviceHandle _interfaceNotificationHandle;
         private IntPtr _buffer;
 
-        internal User32(Window window)
-        {
-            _isWindowConfigured = true;
-            _windowKeeper = new WindowKeeper(window);
-            RegisterForDeviceChange();
-        }
+        internal User32Dll() { }
 
         /// <summary>
         ///     Registers to be notified when devices are added or removed.
         /// </summary>
         /// <returns>True if successfull, False otherwise</returns>
-        public bool RegisterForDeviceChange()
+        public bool RegisterForDeviceChange(IntPtr externalEventHandle)
         {
-            if (!_isWindowConfigured)
-            {
-                throw new Exception(@"Please call ""ConfigTargetWindow"" before use!!");
-            }
-
             var status = false;
             try
             {
-                _interfaceNotificationHandle = new SafeDeviceHandle(RegisterDeviceNotification(_windowKeeper.Handle));
-                if (_interfaceNotificationHandle != null && !_interfaceNotificationHandle.IsInvalid)
-                {
-                    status = true;
-                }
+                _interfaceNotificationHandle = new SafeDeviceHandle(RegisterDeviceNotification(externalEventHandle));
+                status = _interfaceNotificationHandle != null && !_interfaceNotificationHandle.IsInvalid;
             }
             catch (Win32Exception ex)
             {
