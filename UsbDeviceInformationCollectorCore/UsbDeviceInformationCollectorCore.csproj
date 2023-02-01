@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>UsbDeviceInformationCollectorCore</RootNamespace>
+    <AssemblyName>UsbDeviceInformationCollectorCore</AssemblyName>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <ApplicationIcon />
+    <Win32Resource />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="CLibs\User32Dll\**" />
+    <Compile Remove="CLibs\User32\**" />
+    <EmbeddedResource Remove="CLibs\User32Dll\**" />
+    <EmbeddedResource Remove="CLibs\User32\**" />
+    <None Remove="CLibs\User32Dll\**" />
+    <None Remove="CLibs\User32\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="CLibs\User32Dll\User32Dll.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DynamicData" Version="7.9.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="NLog" Version="5.0.4" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.0.4" />
+    <PackageReference Include="ReactiveUI" Version="18.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeviceSearcherGate\DeviceSearcherGate.csproj" />
+  </ItemGroup>
+
+</Project>
