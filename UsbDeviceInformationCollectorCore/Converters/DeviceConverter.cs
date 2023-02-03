@@ -16,6 +16,7 @@ namespace UsbDeviceInformationCollectorCore.Converters
         private const string DeviceUsbPathPattern = @"#USBROOT\(\d+\)(#USB\(\d+\))+";
         public static DeviceConverter Instance = new();
         private readonly DevicePropertiesAnalyzer _analyzer = DevicePropertiesAnalyzer.Instance;
+        private readonly RegistrySearcher _searcher = new();
 
         private DeviceConverter() { }
 
@@ -106,13 +107,10 @@ namespace UsbDeviceInformationCollectorCore.Converters
                 switch (properties.PnpClassesTypes)
                 {
                     case PnPDeviceClassType.WPD:
-                    {
                         SetModelInformation(device, properties);
                         break;
-                    }
 
                     case PnPDeviceClassType.Modem:
-                    {
                         if (string.IsNullOrEmpty(properties.ComPort) == false)
                         {
                             device.ComPort = properties.ComPort;
@@ -127,10 +125,13 @@ namespace UsbDeviceInformationCollectorCore.Converters
                         }
 
                         break;
-                    }
                 }
 
                 TrySetDeviceId(device, properties);
+                if (device.Type == DevicesTypes.Disk)
+                {
+
+                }
 
                 if (string.IsNullOrEmpty(properties.Manufacturer) == false)
                 {
@@ -215,7 +216,7 @@ namespace UsbDeviceInformationCollectorCore.Converters
         private static bool IsDeviceUsbPath(UsbHubProperties device) =>
             Regex.IsMatch(device.Path, DeviceUsbPathPattern);
 
-        private static string ExtractDeviceId(string hardwareDeviceId)
+        internal static string ExtractDeviceId(string hardwareDeviceId)
         {
             var possibleDeviceId =
                 Regex.Replace(hardwareDeviceId, @"(.+)\\{1}\b", string.Empty);
@@ -271,6 +272,10 @@ namespace UsbDeviceInformationCollectorCore.Converters
             }
 
             device.Id ??= extractedId;
+            foreach (var diskId in _searcher.GetDisksIds().Where(diskId => extractedId.Equals(diskId, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                    device.Type = DevicesTypes.Disk;
+            }
         }
     }
 }

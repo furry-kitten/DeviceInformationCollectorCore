@@ -12,7 +12,8 @@ namespace UsbDeviceInformationCollectorCore.Spec
                    device.Properties.Any(property =>
                        property.PnpClassesTypes is PnPDeviceClassType.MEDIA or
                            PnPDeviceClassType.HIDClass or
-                           PnPDeviceClassType.None);
+                           PnPDeviceClassType.None) ||
+                   device.Type is DevicesTypes.Disk;
         }
     }
 }

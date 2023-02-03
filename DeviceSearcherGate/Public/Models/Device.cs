@@ -1,4 +1,6 @@
-﻿namespace UsbDeviceInformationCollectorCore.Models
+﻿using UsbDeviceInformationCollectorCore.Enums;
+
+namespace UsbDeviceInformationCollectorCore.Models
 {
     public class Device : BaseWindowsDeviceModel
     {
@@ -11,5 +13,6 @@
         public string ShortPath { get; set; }
         public string SerialNumber { get; set; }
         public string Imei { get; set; }
+        public DevicesTypes Type { get; set; }
     }
 }

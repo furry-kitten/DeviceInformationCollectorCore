@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <PackageReference Include="DynamicData" Version="7.9.5" />
+    <PackageReference Include="Microsoft.Win32.Registry.AccessControl" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="NLog" Version="5.0.4" />
     <PackageReference Include="NLog.Extensions.Logging" Version="5.0.4" />
