@@ -106,6 +106,7 @@ namespace UsbDeviceInformationCollectorCore.Converters
             {
                 switch (properties.PnpClassesTypes)
                 {
+                    case PnPDeviceClassType.HIDClass:
                     case PnPDeviceClassType.WPD:
                         SetModelInformation(device, properties);
                         break;
@@ -128,11 +129,6 @@ namespace UsbDeviceInformationCollectorCore.Converters
                 }
 
                 TrySetDeviceId(device, properties);
-                if (device.Type == DevicesTypes.Disk)
-                {
-
-                }
-
                 if (string.IsNullOrEmpty(properties.Manufacturer) == false)
                 {
                     device.Manufacture ??= properties.Manufacturer;
@@ -144,7 +140,7 @@ namespace UsbDeviceInformationCollectorCore.Converters
                 }
             }
 
-            if (allDeviceProperties.Length > 1 || device.ModelName != device.ModelNumber)
+            if ((allDeviceProperties.Length > 1 || device.ModelName != device.ModelNumber) && string.IsNullOrWhiteSpace(device.ModelNumber) == false)
             {
                 return;
             }
@@ -237,7 +233,8 @@ namespace UsbDeviceInformationCollectorCore.Converters
                     .EndsWith(device.Id.ToLower()));
 
             if (properties == null ||
-                (device.ModelName != device.ModelNumber && properties.BusReportedDeviceDesc == device.ModelNumber))
+                device.ModelName != device.ModelNumber ||
+                properties.BusReportedDeviceDesc == device.ModelNumber)
             {
                 return;
             }
