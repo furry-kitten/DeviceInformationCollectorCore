@@ -145,8 +145,8 @@ namespace UsbDeviceInformationCollectorCore.Converters
                 return;
             }
 
-            device.ModelNumber = allDeviceProperties.First()
-                .BusReportedDeviceDesc;
+            var first = allDeviceProperties.First();
+            device.ModelNumber = first.BusReportedDeviceDesc;
         }
 
         internal (string Models, string SerialNumber, string Imei) Foo(string PortName)
